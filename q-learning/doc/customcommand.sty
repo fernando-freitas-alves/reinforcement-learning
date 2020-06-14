@@ -6,14 +6,29 @@
 
 \def\algorithmname{\ALG@name}
 
-\NewDocumentCommand{\reffig}{m}{\figurename~\ref{#1}}
-\NewDocumentCommand{\reftable}{m}{\tablename~\ref{#1}}
-\NewDocumentCommand{\refalgorithm}{m}{\algorithmname~\ref{#1}}
+\NewDocumentCommand{\figref}{mo}{\figurename~\ref{#1}%
+    \IfNoValueTF{#2}
+    {}
+    {-\ref{#2}}%
+}
+\NewDocumentCommand{\tableref}{mo}{%
+    \IfNoValueTF{#2}
+    {Table~\ref{#1}}
+    {Tables~\ref{#1}-\ref{#2}}%
+}
+\NewDocumentCommand{\algref}{mo}{%
+    \IfNoValueTF{#2}
+    {\algorithmname~\ref{#1}}
+    {{\algorithmname}s~\ref{#1}-\ref{#2}}%
+}
 
 \DeclareMathOperator*{\argmax}{arg\,max}
 \NewDocumentCommand{\sets}{}{\to}
 \RenewDocumentCommand{\-}{}{\textrm{-}}
 \NewDocumentCommand{\Real}{}{\mathbb{R}}
+
+\NewDocumentCommand{\optimal}{}{*}
+\NewDocumentCommand{\nextsymbol}{}{^{\prime}}
 
 \NewDocumentCommand{\state}{}{s}
 \NewDocumentCommand{\states}{}{\mathbb{S}}
@@ -21,18 +36,20 @@
 \NewDocumentCommand{\observables}{}{\mathbb{O}}
 \NewDocumentCommand{\action}{}{a}
 \NewDocumentCommand{\actions}{}{\mathbb{A}}
+\NewDocumentCommand{\bestaction}{}{\action^{\optimal}}
+\NewDocumentCommand{\trajectory}{}{\tau}
 \NewDocumentCommand{\explorationrate}{}{\epsilon}
 \NewDocumentCommand{\explorationaction}{}{\action_{\explorationrate}}
 \NewDocumentCommand{\exploitationaction}{}{\action_{1-\explorationrate}}
 \NewDocumentCommand{\policy}{}{\pi}
+\NewDocumentCommand{\optimalpolicy}{}{\policy^{\optimal}}
 \NewDocumentCommand{\discountfactor}{}{\gamma}
 \NewDocumentCommand{\learningrate}{}{\alpha}
 \NewDocumentCommand{\error}{}{e}
 \NewDocumentCommand{\environment}{}{\mathcal{E}}
 \NewDocumentCommand{\agent}{}{\mathcal{A}}
 \NewDocumentCommand{\reward}{}{r}
-\NewDocumentCommand{\rewards}{}{\mathbb{R}}
-\NewDocumentCommand{\rewardargs}{O{}}{\left(\state#1,\action#1\right)}
+\NewDocumentCommand{\rewardfunc}{}{R}
 
 \NewDocumentCommand{\q}{O{}}{q#1}
 \NewDocumentCommand{\qtarget}{}{\q[_t]}
@@ -40,21 +57,28 @@
 \NewDocumentCommand{\Q}{O{}}{Q#1}
 \NewDocumentCommand{\Qnoisy}{O{}}{\widetilde{Q}#1}
 \NewDocumentCommand{\Qpolicy}{}{\Q[^{\pi}]}
-\NewDocumentCommand{\Qoptimal}{}{\Q[^{*}]}
+\NewDocumentCommand{\Qoptimal}{}{\Q[^{\optimal}]}
 \NewDocumentCommand{\Qtarget}{O{}}{\Q[_{t#1}]}
 \NewDocumentCommand{\QtargetNoisy}{O{}}{\Qnoisy[_{t#1}]}
-\NewDocumentCommand{\Qargs}{O{}}{\left(\state#1,\action#1\right)}
 \NewDocumentCommand{\Qrandom}{O{}}{\Qnoisy[#1]}
 
+\NewDocumentCommand{\bestactionargs}{O{}}{\left(\state#1\right)}
+\NewDocumentCommand{\rewardargs}{O{}}{\left(\state#1,\action#1,\nextstate#1\right)}
+\NewDocumentCommand{\rewardfuncargs}{O{}}{\left(\trajectory#1\right)}
+\NewDocumentCommand{\stateaction}{O{}}{\left(\state#1,\action#1\right)}
+\NewDocumentCommand{\Qargs}{O{}}{\stateaction[#1]}
+
+\NewDocumentCommand{\bestactionf}{O{}}{\bestaction\bestactionargs{#1}}
+\NewDocumentCommand{\rewardf}{O{}}{\rewardfunc\rewardargs[#1]}
+\NewDocumentCommand{\rewardftraj}{O{}}{\rewardfunc\rewardfuncargs[#1]}
 \NewDocumentCommand{\Qf}{O{}O{}}{\Q[#1]\Qargs[#2]}
 \NewDocumentCommand{\Qfpolicy}{O{}}{\Qpolicy\Qargs[#1]}
 \NewDocumentCommand{\Qfoptimal}{O{}}{\Qoptimal\Qargs[#1]}
 \NewDocumentCommand{\Qftarget}{O{}}{\Qtarget\Qargs[#1]}
-\NewDocumentCommand{\rewardf}{O{}}{\reward\rewardargs[#1]}
-\NewDocumentCommand{\Expected}{O{}m}{\underset{#1}{\textrm{E}}\left[#2\right]}
 \NewDocumentCommand{\QftargetNoisy}{O{}}{\QtargetNoisy\Qargs[#1]}
+\NewDocumentCommand{\Expected}{O{}m}{\underset{#1}{\textrm{E}}\left[#2\right]}
+\NewDocumentCommand{\expectedreturn}{O{}}{J\left(\policy#1\right)}
 
-\NewDocumentCommand{\nextsymbol}{}{^{\prime}}
 \NewDocumentCommand{\nextstate}{}{\state\nextsymbol}
 \NewDocumentCommand{\nextaction}{}{\action\nextsymbol}
 \NewDocumentCommand{\nextQtarget}{}{\Qtarget[+1]}
@@ -69,10 +93,18 @@
 \NewDocumentCommand{\Qagent}{}{$\Q$-agent}
 \NewDocumentCommand{\QAgent}{}{$\Q$-Agent}
 \NewDocumentCommand{\Qtable}{}{$Q$-table}
+\NewDocumentCommand{\Qtables}{}{$Q$-tables}
+\NewDocumentCommand{\Qvalue}{}{$Q$-value}
+\NewDocumentCommand{\Qvalues}{}{$Q$-values}
 
-\NewDocumentCommand{\function}{}{\textsc}
+\NewDocumentCommand{\functionname}{m}{\textsc{#1}}
+\NewDocumentCommand{\function}{mo}{\textsc{#1}%
+    \IfNoValueTF{#2}
+    {}
+    {$\left(#2\right)$}%
+}
 
-\NewDocumentCommand{\FUNCTION}{mO{}}{\item[\textbf{function} \function{#1}$\left(#2\right)$]}
+\NewDocumentCommand{\FUNCTION}{mO{}}{\item[\textbf{function} \functionname{#1}$\left(#2\right)$]}
 \NewDocumentCommand{\PARAMETERS}{}{\item[\textbf{Parameters:}]}
 \NewDocumentCommand{\INPUT}{}{\item[\textbf{Input:}]}
 \NewDocumentCommand{\OUTPUT}{}{\item[\textbf{Output:}]}

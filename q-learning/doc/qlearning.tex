@@ -5,9 +5,11 @@
 \usepackage{cite}
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
 \usepackage[utf8]{inputenc}
 % \usepackage{multibib}
 \usepackage{pgfplots}
+\usepackage{subcaption}
 \usepackage[mode=buildnew]{standalone}
 \usepackage{textcomp}
 \usepackage{xcolor}
@@ -32,11 +34,16 @@
 %██████████████████████████████████████████████████████████████████████████████████████████████████
 
 \begin{abstract}
-    abstract here
+    Reinforcement Learning algorithms are becoming more common in research fields of science.
+    Due to the versatility, these algorithms can be used to solve many problems that do have a closed solution and that requires an interaction between an agent and an environment.
+    This paper shows how {\Qlearning} is an algorithm capable of dealing successfully with this type of problems.
+    The implementation is relatively simple and the results demonstrate accuracy in finding an optimal solution.
+    Depending on the environment, the algorithm also showed a fast learning pace.
+    This technique can be an entry-level for new developers of Machine Learning as well can be applicable in many problems nowadays, which includes system auto-configured and agents that learn how to play video-games.
 \end{abstract}
 
 \begin{IEEEkeywords}
-    artificial intelligence, machine learning, reinforcement learning
+    artificial intelligence, machine learning, reinforcement learning, Bellman's equation, Markov processes
 \end{IEEEkeywords}
 
 %▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
@@ -47,9 +54,8 @@ Reinforcement Learning (RL) is becoming a popular subfield of Machine Learning (
 Most ML techniques up to now are data-based rather than on interaction rules-based.
 RL is no different.
 More specifically, {\Qlearning} is an RL algorithm that gathers environment data and acts against it.
-Although invented more than 30 years ago by Watkins \cite{Watkins:1989}.
 
-The idea of RL rely on problems of agent-environment interactions (\reffig{agent-environment}).
+The idea of RL rely on problems of agent-environment interactions (\figref{agent-environment}).
 An environment is the set of states and laws that dictate how actions change the current state.
 The agent, which most of the time is the object of study, performs that action on the environment based on its state.
 In turn, the environment replies to the agent with a reward and changes the state.
@@ -71,7 +77,7 @@ Hence, there is no need of understanding the physics and laws of the environment
 \end{figure}
 
 This paper study a specific type of RL algorithm called {\Qlearning}.
-Bu as shown a recent real-life application of this algorithm for an online web system auto-configuration \cite{Bu:2009}.
+Although invented more than 30 years ago by Watkins \cite{Watkins:1989}, Bu as shown a recent real-life application of this algorithm for an online web system auto-configuration \cite{Bu:2009}.
 Other works like \cite{Zheng:2018} show that {\Qlearning} is the basis of more complex techniques with better performance, like Deep{\QLearning} where a deep neural network is used to model the {\Qlearning} objective function.
 The following sections present how {\Qlearning} works and how to build this algorithm to solve OpenAI Gym \cite{OpenAIGym} environment goals.
 
@@ -85,33 +91,127 @@ In this paper, it is expected that the environment is already implemented.
 Thus, the goal is to build the agent to reach a specific goal defined by a problem.
 
 The environment contains all possible states $\states$ as well as tracks its current state $\state \in \states$ within interactions.
-This entity is also responsible for reacting against an action $\action \in \actions$ by changing its state and providing a reward value, $\reward$, that reflects an heuristic to the given problem.
-The set of rewards, $\rewards$, as well as the state-actions rules are defined by the environment.
-However, they are not a necessary information to be passed to the agent.
+This entity is also responsible for reacting against an action $\action \in \actions$ by changing its state and providing a reward value, $\reward$, that reflects a heuristic to the given problem.
+The reward, in turn, is a function of the given state, the action chosen, and the next state, $\nextstate$, as in
+\begin{equation}
+    \reward = \rewardf.
+    \label{reward function}
+\end{equation}
+The set of rewards as well as the state-actions rules are defined by the environment.
 
-The agent have only access to the observable states, $\observable \in \observables$ for a given state $\state \in \states \supset \observables$, and the rewards provided by the environment.
-Although, the observability of the states depends on the environment and the agent, this paper will treat the observable states and the states as interchangeable, denoting both with $\state$.
+The agent has only access to the observable states, $\observable \in \observables$ for a given state $\state \in \states \supset \observables$, and the rewards provided by the environment.
+Although the observability of the states depends on the environment and the agent, this paper will treat the observable states and the states as interchangeable, denoting both with $\state$.
 So, whenever it is the case that $\observables = \states$ or not, it is implied that the agent will always have access to the observable states and not the states themselves.
 
 The agent entity reacts against the current state with an action $\action$.
 The proper action is chosen from a prioritization from all possible actions $\actions$.
-In {\Qlearning}, the priorities are defined as $Q$-values.
-The best action is then given by the maximum value of a function $\Qf$ quantified for all $\action \in \actions$ in the current state $\state$, as in \ref{best_action}.
-
+In {\Qlearning}, the priorities are defined as {\Qvalues}.
+The action for a specific state is given by a rule called policy $\policy$.
+The best action $\bestaction \equiv \bestactionf$ is then given by the optimal policy $\optimalpolicy$.
+Hence, in this case, the optimal policy is the maximum value of a function $\Qf$ quantified for all $\action \in \actions$ in the current state $\state$, i.e.,
 \begin{equation}
-    \action = \argmax_{\action \in \actions}{\Qf}
-    \label{best_action}
+    \bestactionf = \argmax_{\action \in \actions}{\Qf}.
+    \label{best action}
 \end{equation}
-
 With this model defined, the goal that {\Qlearning} algorithms tackle is find this $Q$ function.
 
-\subsection{Reinforcement learning}\label{reinforcement learning}
+%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-\begin{algorithm}[bp]
-    \caption{Reinforcement learning general algorithm}
+\subsection{Continuous problems and the {\Qtable}}\label{continuous problems}
+
+Many problems faced by RL algorithms involve dealing with discrete variables.
+Say, for instance, dealing with video-games as studied by DeepMind \cite{DeepMind:AtariDeepRL}, where the agent, which is usually the player, has a set of discrete actions available instead of a continuous range.
+The agent may have to move up, down, left, or right, for example.
+
+Not only actions but states may also come as a group of possibilities a scenario can provide, like a given $(x,y)$ position in a grid or a table of chess.
+Even if the states are continuous, the observations may be limited to be discrete.
+For those cases, it is common to write the function $\Qf$ as a table, named {\Qtable}.
+
+A table of $Q$ values is fast to update and simple to store.
+One can start by defining the states group as $\states \in \Real^n$ for $n$ possible states, and similarly the action group $\actions \in \Real^m$ for $m$ possible actions.
+From there, the {\Qtable} can be written as the $n \times m$ matrix $\Qtarget \equiv \Qftarget \in \Real^{n \times m}$.
+The goal then is to find the {\Qvalues} of this table that satisfies \eqref{best action}.
+
+At last, to improve the practicality of the {\Qtable}, even if the problem presents continuous variables, those can always be discretized.
+Therefore, {\Qtables} apply to any kind of agent-environment interaction problem like illustrated in \figref{agent-environment}.
+
+%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+\subsection{The RL central problem}\label{RL central problem}
+
+The {\Qlearning} is an application of the concept of RL.
+However, so far the reward $\reward$ was not used in its definitions.
+Up to this point, it was defined that the $Q$ function prioritizes actions over states.
+It was also defined that the rewards are heuristic given by the environment to point how good an action is in the short term.
+Therefore, there is this relationship between the {\Qvalues} and the rewards.
+In fact, in a broader view, the function $\Qf[^{\policy}]$ can be defined as an estimator of rewards under the policy $\policy$, also know as On-Policy Action-Value Function.
+More specifically, an estimator of the expected return, $\expectedreturn$, of the sum of rewards over a trajectory $\trajectory$ of state-action pairs $\stateaction$, as in
+\begin{equation}
+    \expectedreturn = \Expected[\trajectory \sim \policy]{\rewardftraj}.
+    \label{expected return}
+\end{equation}
+
+However the policy $\policy$ is optimal or not, the trajectory is the result of its rules given by the action-value function,
+\begin{equation}
+    \Qf[^{\policy}] = \expectedreturn,
+    \label{on-policy action-value}
+\end{equation}
+which means the estimator is just an estimator.
+Hence, t is not known what is the optimal trajectory.
+However, that is exactly the central optimization problem of RL algorithms like {\Qlearning} aim to solve, given by
+\begin{equation}
+    \optimalpolicy = \argmax_{\policy}{\expectedreturn}.
+    \label{central problem}
+\end{equation}
+
+%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+\subsection{The Bellman's equation and the \Qagent}\label{qagent}
+
+All this notation is derived from Bellman's work in Dynamic Programming \cite{Bellman:DynamicProgramming}.
+In his publication, he defined a solution for the optimization problem \eqref{central problem} that breaks it into simpler subproblems.
+That solution involves estimating the value of the current point in the trajectory added to the value of the agent's next move discounted by some amount $\discountfactor$.
+In other words,
+\begin{equation}
+    \Qfpolicy = \Expected[\nextstate \sim P]{\rewardf + \discountfactor \Expected[\nextaction \sim \policy]{\nextQfpolicy}},
+    \label{bellman}
+\end{equation}
+which is know as the "Bellman's equation".
+Thus, when the policy is optimal, the same equation is written as
+\begin{equation}
+    \Qfoptimal = \Expected[\nextstate \sim P]{\rewardf + \discountfactor \max_{\nextaction}{\nextQfoptimal}}.
+    \label{optimal bellman}
+\end{equation}
+
+The so-called {\Qagent} algorithm then approximates the optimal action-value function $\Qfoptimal$ by direct small updates.
+These updates act on iteration of the {\Qvalues} over a function $\Qftarget$ at time $t$:
+\begin{equation}
+    \qtarget = \rewardf + \discountfactor \max_{\nextaction}{\nextQftarget}.
+    \label{qtarget}
+\end{equation}
+This {\Qlearning} algorithm, proposed by Watkins \cite{Watkins:1989}, keeps an estimate $\Qftarget$ of $\Qf$ for each state-action pair.
+Furthermore, according to Szepesvari, when $\Qtarget$ is close to $\Qoptimal$, the policy that greedy choose the action with higher {\Qvalue} will be close to optimal \cite{Szepesvari:2010}.
+
+%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+\subsection{Algorithms}\label{algorithms}
+
+Finally, this paper demonstrates the development of algorithms to implement the {\Qagent}.
+Although some function names are derived from OpenAI Gym \cite{OpenAIGym}, the syntax is generic and does not require that library to function.
+
+To start with, it is necessary to define a general procedure of the agent-environment interaction loop for RL problems (\figref{agent-environment}), as in \algref{RL algorithm}.
+Each iteration utilized three functions from the environment $\environment$ given by the library:
+\begin{itemize}
+    \item $\function{Reset}(\environment)$: a reset function called once each episode. It provides the initial state $\state_0 \in \states$.
+    \item $\function{Done}(\environment)$: a done function called at every iteration. It indicates if the simulation is over.
+    \item $\function{Step}(\environment, \action)$: a step function called at every iteration. It provides a set of state-reward $(\state\-\reward)$ for a given action $\action$.
+\end{itemize}
+\begin{algorithm}[h]
+    \caption{RL general algorithm}
     \begin{algorithmic}[1]
-        \FUNCTION  {ReinforcementLearning}[\environment, \agent]
-        \INPUT Environment $\environment$, agent $\agent$
+        \FUNCTION{ReinforcementLearning}[\environment, \agent]
+        % \item[{\function{A}[B]}]
+        \INPUT   Environment $\environment$, agent $\agent$
         \OUTPUT  Trained agent $\agent$
         \\
         \FORALL {$episodes$}
@@ -127,22 +227,20 @@ With this model defined, the goal that {\Qlearning} algorithms tackle is find th
         \ENDFOR
         \RETURN $\agent$
     \end{algorithmic}
-    \label{reinforcement learning algorithm}
+    \label{RL algorithm}
 \end{algorithm}
 
-The environment $\environment$ should have three functions:
+The other two functions are defined by the agent, which implementation is the goal of this paper: \function{Act}[\agent, \state] and \function{Train}[\agent, \state, \action, \nextstate, \reward].
+The current algorithms for both functions are based on the discrete formulation of the $\Qftarget$, described as {\Qtable} in section \ref{continuous problems}.
 
-\begin{itemize}
-    \item $\function{Reset}(\environment)$: a reset function called once each episode. It provides the initial state $\state_0 \in \states$.
-    \item $\function{Done}(\environment)$: a done function called at every iteration. It indicates if the simulation is over.
-    \item $\function{Step}(\environment, \action)$: a step function called at every iteration. It provides a set of state-reward $(\state\-\reward)$ for a given action $\action$.
-\end{itemize}
+The act function is responsible for returning the best action for a given state by using the current {\Qtable}, as in \algref{act}.
+To remove bias from previous {\Qvalues} that may lead the solution to a locally optimal policy, also known as exploitation, it is common to allow agents to explore other options rather than the provided from current policy.
+The new options can be any random decision, which is simulated by a random $\Qrandom$ value added to the current {\Qtable}.
+That balance between exploration and exploitation is controlled by a number $\explorationrate$ between 0 and 1 called exploration rate.
+The return value is defined by \eqref{best action}.
+If the optimization is finished, the $\argmax_{\action}{\Qftarget}$ represents the optimal policy $\optimalpolicy$ from \eqref{central problem} when no exploration is done.
 
-%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-
-\subsection{\QAgent}\label{qagent}
-
-\begin{algorithm}[ht]
+\begin{algorithm}[t]
     \caption{{\QAgent} act algorithm}
     \begin{algorithmic}[1]
         \FUNCTION  {Act}[\agent, \state]
@@ -158,30 +256,17 @@ The environment $\environment$ should have three functions:
     \label{act}
 \end{algorithm}
 
-% Method here \eqref{bellman}.
+The train function, on the other hand, is the implementation of the {\Qlearning} optimization process defined by \eqref{qtarget}.
+The idea is basically to update the current iteration of the {\Qtable} towards the optimal solution, as in \algref{qlearning}.
+First, the current small step $\qtarget$ of the Bellman's equation \eqref{bellman} is calculated.
+That value is the objective function of the optimization problem.
+Then, the {\Qtable} is updated against the loss, which is the difference between the objective function and the current {\Qvalue} for a given state-action pair.
+The discount factor is not necessarily constant.
+In this paper, it has an update rule equal to a decaying constant real number between 0 and 1 that multiplies it at every call to the train function.
+That choice of the update was made to faster convergences, even though it can bias the results.
+Given enough time, if the discount decaying rate is sufficiently small, the table will become a representation of the optimal Bellman's solution \eqref{optimal bellman}.
 
-\begin{equation}
-\Qfpolicy = \Expected[\nextstate \sim P]{\rewardf + \discountfactor \Expected[\nextaction \sim \policy]{\nextQfpolicy}}
-\label{bellman}
-\end{equation}
-
-\begin{equation}
-\Qfoptimal = \Expected[\nextstate \sim P]{\rewardf + \discountfactor \max_{\nextaction}{\nextQfoptimal}}
-\label{optimal bellman}
-\end{equation}
-
-Approximate the optimal action-value function $\Qfoptimal$ by direct small updates of value iteration over a function $\Qftarget$ at time $t$.
-According to \cite{Szepesvari:2010}, when $\Qtarget$ is close to $\Qoptimal$, the policy that greedy choose the action with higher $\q$-value will be close to optimal.
-
-\begin{equation}
-\qtarget = \rewardf + \discountfactor \max_{\nextaction}{\nextQftarget}
-\label{qtarget}
-\end{equation}
-
-
-The {\QLearning} algorithm of Watkins (1989) keeps an estimate $\Qftarget$ of $\Qf$ for each state-action pair $\Qargs \in X \times A$. Upon observing (Xt, At, Rt+1, Yt+1), the estimates are updated as follows:
-
-\begin{algorithm}[ht]
+\begin{algorithm}[t]
     \caption{Tabular {\Qlearning} training algorithm}
     \begin{algorithmic}[1]
         \FUNCTION  {Train}[\agent, \state, \action, \nextstate, \reward]
@@ -197,11 +282,85 @@ The {\QLearning} algorithm of Watkins (1989) keeps an estimate $\Qftarget$ of $\
     \label{qlearning}
 \end{algorithm}
 
+The implementation of the algorithms in Python programming language is available at the repository \url{https://github.com/fernando-freitas-alves/reinforcement-learning}.
+
+
 %▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
 
 \section{Results}
 
-Results here
+The algorithms were tested against 4 environments from OpenAI Gym library \cite{OpenAIGym}, were one was modified:
+\begin{itemize}
+    \item \textbf{FrozenLake-v0}: "The agent controls the movement of a character in a grid world. Some tiles of the grid are walkable, and others lead to the agent falling into the water. Additionally, the movement direction of the agent is uncertain and only partially depends on the chosen direction. The agent is rewarded for finding a walkable path to a goal tile." \cite{OpenAIGym}
+    \item \textbf{FrozenLakeNoSlip-v0}: A external modified version of the FrozenLake-v0 by Shawn where the randomness of the simulated slippery was removed. Hence, this is a deterministic environment. \cite{TheComputerScientist:2018}
+    \item \textbf{MountainCar-v0}: Originated from Moore's Ph.D. thesis \cite{Moore:1990}, this environment is a simulated car in a one-dimensional track, positioned between two hills. The goal is to make the agent drive up the mountain on the right; however, the car's engine is not strong enough to scale the mountain in a single pass. Hence, the car is forced to drive back and forth to build up momentum.
+    \item \textbf{MountainCarContinuous-v0}: A similar problem to the MountainCar-v0 where the only difference is a continuous action space. In other words, the left and right movements are real numbers simulating a gas pedal. Besides, the reward is greater if the agent spends less energy to reach the goal.
+\end{itemize}
+\tableref{environment variables} summarizes the major variables for each environment, while \figref{FrozenLake initial state} and \ref{MountainCar-0 states} illustrate their states.
+
+\begin{table}[t]
+    \caption{Environments variables}
+    \begin{center}
+    \begin{tabular}{|l|c|c|c|c}
+        \hline \textbf{Name}           & \textbf{Observation}& \textbf{Action}& \textbf{Reward}                \\
+                                       & \textbf{space}      & \textbf{space} & \textbf{space}                 \\
+        \hline FrozenLake-v0           & Discrete            & Discrete       & $\left\{0, 1\right\}$          \\
+        \hline FrozenLakeNoSlip-v0     & Discrete            & Discrete       & $\left\{0, 1\right\}$          \\
+        \hline MountainCar-v0          & Continuous          & Discrete       & $\left(-\infty, \infty\right)$ \\
+        \hline MountainCarContinuous-v0& Continuous          & Continuous     & $\left(-\infty, \infty\right)$ \\
+        \hline
+    \end{tabular}
+    \label{environment variables}
+    \end{center}
+\end{table}
+
+\begin{table*}[t]
+    \centering
+    \begin{minipage}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.2\linewidth]{img/FrozenLake.png}
+        \caption{Initial state of the environments FrozenLake-v0 and FrozenLakeNoSlip-v0. The letters S, F, H, and G represents the start position, frozen water, holes, and the goal. The red background selected letter represents the current state. The agent cannot move outside the grid.}
+        \label{FrozenLake initial state}
+    \end{minipage}\hfill
+    \begin{minipage}{0.45\linewidth}
+        \centering
+        \begin{subfigure}{0.5\linewidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{img/MountainCar-0.png}
+            \caption{}
+            \label{MountainCar-0 states:a}
+        \end{subfigure}%
+        \begin{subfigure}{0.5\linewidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{img/MountainCar-1.png}
+            \caption{}
+            \label{MountainCar-0 states:b}
+        \end{subfigure}
+        \begin{subfigure}{0.5\linewidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{img/MountainCar-2.png}
+            \caption{}
+            \label{MountainCar-0 states:c}
+        \end{subfigure}%
+        \begin{subfigure}{0.5\linewidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{img/MountainCar-3.png}
+            \caption{}
+            \label{MountainCar-0 states:d}
+        \end{subfigure}
+        \caption{Some of the possible states of the environments MountainCar-v0 and MountainCarContinuous-v0. The objective is to the car to reach the right end of the screen. If the agent move outside the left end of the screen, the simulation is terminated as failed. The starting pointing is in a random position near the state \figref{MountainCar-0 states:a}.}
+        \label{MountainCar-0 states}
+    \end{minipage}
+\end{table*}
+
+The results are shown as 3 curves by episodes: cumulative goals reached, rewards, and exploration rate; for each environment simulation.
+The cumulative goals reached shows the total of how many times the goal of the environment was achieved by the agent within the limit steps preconfigured by the library.
+Similarly, the reward shows the return of the environment, while the exploitation rate shows the evolution of that variable over episodes.
+
+\figref{results_FrozenLakeNoSlip-v0} shows the results for FrozenLakeNoSlip-v0.
+Since this is a discrete deterministic environment, the states are updates in a Markov chain.
+The curves demonstrate constant cumulative goals reached slope and the fast saturation of the rewards.
+This presents the {\Qlearning} algorithm was not only able to succeed in most of the episodes but also had fast training to the optimal solution.
 
 \begin{figure*}[!t]
     \centering
@@ -210,6 +369,13 @@ Results here
     \label{results_FrozenLakeNoSlip-v0}
 \end{figure*}
 
+On the other hand, the results for FrozenLake-v0 in \figref{results_FrozenLake-v0} shows a slower training and lower efficacy.
+The constant cumulative goals slope was lower and the rewards kept oscillating around a plateau after some training.
+This demonstrates that a stochastic simulation does not have as fast and as an optimal solution as the one finds for the same environment but deterministic.
+Adding a random factor to the next states after an action increased the difficulty level to the algorithm to find a correlation between his actions and high rewards.
+That randomness changed the optimal policy in a way that it becomes unpredictable to find the best next action.
+Although this problem could be found by any RL algorithm, {\Qlearning} showed it is capable of finding a consistent solution that solves the problem 40\% of the time with the given stochasticity.
+
 \begin{figure*}[!t]
     \centering
     \input{img/results_FrozenLake-v0.pgf}
@@ -217,12 +383,36 @@ Results here
     \label{results_FrozenLake-v0}
 \end{figure*}
 
+Changing to a continuous state environment, the results for MountainCar-v0 are shown in \figref{results_MountainCar-v0}.
+The discretization of the position and velocity states took 20 numbers for each.
+The curves were similar to a mix between the ones from the FrozenLake.
+On one hand, the return found a plateau and oscillated randomly around it after some episodes.
+This illustrates stability in the learning process, where the {\Qtable} is not so largely updated as in previous episodes.
+Intriguingly, the rewards had a sudden decay followed by a fast recuperation after a few episodes.
+That is mainly due to unvisited states and exploration, which can be lower but never null.
+On the other hand, even though the table stabilized but kept a random variation, the cumulative goals reached had a high slope.
+Indeed, most of the episodes ended successfully, demonstrating the solution found is close to optimal within the given episodes to train.
+
 \begin{figure*}[!t]
     \centering
     \input{img/results_MountainCar-v0.pgf}
     \caption{Results from MountainCar-v0 environment.}
     \label{results_MountainCar-v0}
 \end{figure*}
+
+Finally, the results for the similar but totally continuous MountainCarContinuous-v0 problem is shown in \figref{results_MountainCarContinuous-v0-3} and \ref{results_MountainCarContinuous-v0-20}.
+The first shows the result when the states have 20 discrete values and the actions have only 3.
+This is an equivalent problem from MountainCar-v0, since all actions were mapped to left, right, and nothing.
+Despite their similarities, they are still different in physics simulation, since now the car has a rule that considers the gas pedal.
+Because of that, the decaying constant of the exploration rate had to be set to a smaller value.
+Nonetheless, the results showed also a plateau for return but with smaller variations, while the stabilized found policy was optimal to the point of almost all episodes converging, save for a few still in training.
+When comparing with \figref{results_MountainCar-v0}, both cumulative goals reached slopes are equivalent, showing the solution found was similar.
+
+The second figure shows the results when the states and the actions have the same 20 discrete values.
+The convergency took considerably more episodes to happen, but the slope of the cumulative goals reached was also similar to \figref{results_MountainCar-v0}.
+One can consider that, due to a higher decaying constant of the exploration rate, the training requires more steps to converge, since more actions will be chosen randomly.
+In any case, the return and accuracy were similar to a lower-discretized problem, showing that raising the numbers of possible states among a continuous environment does not necessarily make the algorithm more efficient.
+The higher the discretization, the more {\Qvalues} the table will have to keep and, consequently, the more system memory the agent will need.
 
 \begin{figure*}[!t]
     \centering
@@ -238,19 +428,22 @@ Results here
     \label{results_MountainCarContinuous-v0-20}
 \end{figure*}
 
-%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+%██████████████████████████████████████████████████████████████████████████████████████████████████
 
-\subsection{Another subtitle here}\label{AA}
-More results here.
-% And here Fig.~\ref{fig}.
+\section{Conclusion}
 
-\begin{itemize}
-\item item here.
-\end{itemize}
+{\Qlearning} exhibited successfully results in the RL optimization problem.
+Moreover, RL showed to be a feasible and robust technique to solve agent-environment problems.
+The implementation of the algorithm is relatively simple and results in fast convergencies in some cases.
+However, this method requires some fine-tuning of the parameters that may take some time to find a quick training for the given environment.
+Due to that limitation, only 4 environments were tested in this paper.
+The results also showed that the developer of the agent model must choose carefully the discretization level of the problem, in case it has continuous variables.
+In summary, the {\Qlearning} algorithm is a good tool for practicing and can serve as an entry-level for RL.
+However, more practical tools, like Deep {\QLearning}, can be developed to provide the same results more efficiently.
 
 %██████████████████████████████████████████████████████████████████████████████████████████████████
 
 \bibliographystyle{IEEEtran}
-\bibliography{references}
+\bibliography{citations}
 
 \end{document}
