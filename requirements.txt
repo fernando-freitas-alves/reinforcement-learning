@@ -1,0 +1,2 @@
+gym==0.17.*
+matplotlib==3.1.*
